@@ -10,13 +10,25 @@ class CounterView extends StatefulWidget {
 
 class _CounterViewState extends State<CounterView> {
   final CounterController _controller = CounterController();
+  double _nilaiSlider = 1;
+
+  Color _getHistoryColor(String text) {
+    if (text.contains("Tambah")) {
+      return Colors.green;
+    } else if (text.contains("Kurang")) {
+      return Colors.red;
+    } else if (text.contains("Reset")) {
+      return Colors.grey;
+    }
+    return Colors.black;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Logbook Salma: SRP Version"),
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: const Color.fromARGB(255, 130, 176, 255),
         foregroundColor: Colors.white,
       ),
       body: Center(
@@ -27,6 +39,10 @@ class _CounterViewState extends State<CounterView> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const SizedBox(height: 24),
+                const Text(
+                  "Counter App",
+                  style: TextStyle(fontSize: 32, fontWeight: FontWeight.bold),
+                ),
                 Text(
                   '${_controller.value}',
                   style: const TextStyle(
@@ -37,32 +53,24 @@ class _CounterViewState extends State<CounterView> {
 
                 const Text(
                   "Total Hitungan",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
 
-                const SizedBox(height: 16),
-
-                SizedBox(
-                  width: 120,
-                  child: TextField(
-                    textAlign: TextAlign.center,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Step',
-                      isDense: true,
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (value) {
-                      final step = int.tryParse(value) ?? 1;
-                      setState(() {
-                        _controller.setStep(step);
-                      });
-                    },
-                  ),
+                Slider(
+                  value: _nilaiSlider,
+                  min: 1,
+                  max: 10,
+                  divisions: 9,
+                  label: _nilaiSlider.round().toString(),
+                  onChanged: (value) {
+                    setState(() {
+                      _nilaiSlider = value;
+                      _controller.setStep(value.round());
+                    });
+                  },
                 ),
 
                 const SizedBox(height: 24),
-
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -70,6 +78,13 @@ class _CounterViewState extends State<CounterView> {
                       width: 60,
                       height: 45,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: () {
                           setState(() {
                             _controller.decrement();
@@ -80,11 +95,17 @@ class _CounterViewState extends State<CounterView> {
                     ),
 
                     const SizedBox(width: 16),
-
                     SizedBox(
                       width: 60,
                       height: 45,
                       child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
                         onPressed: () {
                           setState(() {
                             _controller.increment();
@@ -95,28 +116,56 @@ class _CounterViewState extends State<CounterView> {
                     ),
 
                     const SizedBox(width: 16),
-
                     SizedBox(
                       height: 45,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
+                          backgroundColor: Colors.transparent,
                           foregroundColor: Colors.white,
+                          side: const BorderSide(color: Colors.grey),
                         ),
                         onPressed: () {
-                          setState(() {
-                            _controller.reset();
-                          });
+                          showDialog(
+                            context: context,
+                            builder: (context) => AlertDialog(
+                              title: const Text("Konfirmasi Reset"),
+                              content: const Text(
+                                "Apakah kamu yakin ingin mereset?",
+                              ),
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("Batal"),
+                                ),
+                                ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.red,
+                                    foregroundColor: Colors.white,
+                                  ),
+                                  onPressed: () {
+                                    setState(() {
+                                      _controller.reset();
+                                    });
+                                    Navigator.pop(context);
+                                  },
+                                  child: const Text("Reset"),
+                                ),
+                              ],
+                            ),
+                          );
                         },
+
                         child: const Text('Reset'),
-                        
                       ),
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 32),
                 const Text(
-                  "History",
+                  "Riwayat History",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
 
@@ -129,14 +178,17 @@ class _CounterViewState extends State<CounterView> {
                             style: TextStyle(color: Colors.grey),
                           ),
                         ]
-                      : _controller.history
-                            .map(
-                              (item) => Text(
+                      : _controller.history.map((item) {
+                          return Text(
+                            item,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: _getHistoryColor(
                                 item,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            )
-                            .toList(),
+                              ), // ← DI SINI DIPAKAI
+                            ),
+                          );
+                        }).toList(),
                 ),
               ],
             ),

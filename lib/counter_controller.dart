@@ -8,12 +8,11 @@ class CounterController {
   List<String> get history => _history;
 
   void setStep(int step) {
-    if (step > 0) {
-      _step = step;
-    }
+    _step = step;
   }
 
   void increment() {
+    if (_step <= 0) return;
     _counter += _step;
     _addHistory("Tambah $_step");
   }
