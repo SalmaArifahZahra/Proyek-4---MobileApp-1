@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'views/splash_view.dart';
+import 'features/views/splash_view.dart';
+
 void main() {
   runApp(const MyApp());
 }
@@ -9,9 +10,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+      title: 'LogBook App',
       debugShowCheckedModeBanner: false,
-      home: SplashView(),
+      theme: ThemeData(colorSchemeSeed: Colors.indigo),
+      home: const SplashView(),
     );
   }
 }
