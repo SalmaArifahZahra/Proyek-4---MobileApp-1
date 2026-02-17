@@ -2,10 +2,7 @@ class LoginController {
   // final String _validUsername = "admin";
   // final String _validPassword = "123";
 
-  final Map<String, String> _users = {
-    "admin": "123", 
-    "salma": "666"
-  };
+  final Map<String, String> _users = {"admin": "123", "salma": "666"};
 
   int _failedAttempts = 0;
   bool _isLocked = false;
@@ -13,6 +10,10 @@ class LoginController {
   bool get isLocked => _isLocked;
 
   bool login(String username, String password) {
+    if (username.isEmpty || password.isEmpty) {
+      return false;
+    }
+
     if (_isLocked) return false;
 
     // if (username == _validUsername && password == _validPassword) {

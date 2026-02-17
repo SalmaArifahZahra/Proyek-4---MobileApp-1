@@ -16,14 +16,22 @@ class _CounterViewState extends State<CounterView> {
   double _nilaiSlider = 1;
 
   Color _getHistoryColor(String text) {
-    if (text.contains("Tambah")) {
+    if (text.contains("menambah")) {
       return Colors.green;
-    } else if (text.contains("Kurang")) {
+    } else if (text.contains("mengurangi")) {
       return Colors.red;
-    } else if (text.contains("Reset")) {
+    } else if (text.contains("mereset")) {
       return Colors.grey;
     }
     return Colors.black;
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.loadData().then((_) {
+      setState(() {});
+    });
   }
 
   @override
@@ -31,7 +39,7 @@ class _CounterViewState extends State<CounterView> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Logbook: ${widget.username}"),
-        backgroundColor: const Color.fromARGB(255, 130, 176, 255),
+        backgroundColor: const Color.fromARGB(255, 56, 189, 248),
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -50,7 +58,6 @@ class _CounterViewState extends State<CounterView> {
                     TextButton(
                       onPressed: () {
                         Navigator.pop(context);
-
                         Navigator.pushAndRemoveUntil(
                           context,
                           MaterialPageRoute(
@@ -90,12 +97,10 @@ class _CounterViewState extends State<CounterView> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-
                 const Text(
                   "Total Hitungan",
                   style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
                 ),
-
                 Slider(
                   value: _nilaiSlider,
                   min: 1,
@@ -109,7 +114,6 @@ class _CounterViewState extends State<CounterView> {
                     });
                   },
                 ),
-
                 const SizedBox(height: 24),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -127,13 +131,12 @@ class _CounterViewState extends State<CounterView> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _controller.decrement();
+                            _controller.decrement(widget.username);
                           });
                         },
                         child: const Text('-'),
                       ),
                     ),
-
                     const SizedBox(width: 16),
                     SizedBox(
                       width: 60,
@@ -148,13 +151,12 @@ class _CounterViewState extends State<CounterView> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _controller.increment();
+                            _controller.increment(widget.username);
                           });
                         },
                         child: const Text('+'),
                       ),
                     ),
-
                     const SizedBox(width: 16),
                     SizedBox(
                       height: 45,
@@ -186,7 +188,7 @@ class _CounterViewState extends State<CounterView> {
                                   ),
                                   onPressed: () {
                                     setState(() {
-                                      _controller.reset();
+                                      _controller.reset(widget.username);
                                     });
                                     Navigator.pop(context);
                                   },
@@ -196,36 +198,46 @@ class _CounterViewState extends State<CounterView> {
                             ),
                           );
                         },
-
                         child: const Text('Reset'),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 32),
                 const Text(
                   "Riwayat History",
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-
+                const SizedBox(height: 8),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (context) => HistoryDialog(
+                        history: _controller.history,
+                        getHistoryColor: _getHistoryColor,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.history),
+                  label: const Text("Lihat Semua History"),
+                ),
                 const SizedBox(height: 15),
+                // 5 data terakhir
                 Column(
-                  children: _controller.history.isEmpty
+                  children: _controller.recentHistory.isEmpty
                       ? [
                           const Text(
                             "Belum ada aktivitas",
                             style: TextStyle(color: Colors.grey),
                           ),
                         ]
-                      : _controller.history.map((item) {
+                      : _controller.recentHistory.map((item) {
                           return Text(
                             item,
                             style: TextStyle(
                               fontSize: 14,
-                              color: _getHistoryColor(
-                                item,
-                              ), // ← DI SINI DIPAKAI
+                              color: _getHistoryColor(item),
                             ),
                           );
                         }).toList(),
@@ -237,4 +249,47 @@ class _CounterViewState extends State<CounterView> {
       ),
     );
   }
+}
+
+  class HistoryDialog extends StatelessWidget {
+    final List<String> history;
+    final Color Function(String) getHistoryColor;
+
+    const HistoryDialog({
+      super.key,
+      required this.history,
+      required this.getHistoryColor,
+    });
+
+    @override
+    Widget build(BuildContext context) {
+      return AlertDialog(
+        title: const Text("Seluruh History"),
+        content: SizedBox(
+          width: double.maxFinite,
+          height: 200, 
+          child: history.isEmpty
+              ? const Text("Belum ada aktivitas")
+              : ListView.builder(
+                  itemCount: history.length,
+                  itemBuilder: (context, index) {
+                    final item = history[index]; 
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 2),
+                      child: Text(
+                        item,
+                        style: TextStyle(color: getHistoryColor(item)),
+                      ),
+                    );
+                  },
+                ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Tutup"),
+          ),
+        ],
+      );
+    }
 }
