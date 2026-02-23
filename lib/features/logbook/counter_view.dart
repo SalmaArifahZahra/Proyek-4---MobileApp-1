@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logbook_app_062/features/onboarding/onboarding_view.dart';
+import 'log_view.dart';
 import 'counter_controller.dart';
 
 class CounterView extends StatefulWidget {
@@ -223,7 +224,6 @@ class _CounterViewState extends State<CounterView> {
                   label: const Text("Lihat Semua History"),
                 ),
                 const SizedBox(height: 15),
-                // 5 data terakhir
                 Column(
                   children: _controller.recentHistory.isEmpty
                       ? [
@@ -242,6 +242,16 @@ class _CounterViewState extends State<CounterView> {
                           );
                         }).toList(),
                 ),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const LogView()),
+                    );
+                  },
+                  child: const Text("Buka Logbook"),
+                ),
               ],
             ),
           ),
@@ -251,45 +261,45 @@ class _CounterViewState extends State<CounterView> {
   }
 }
 
-  class HistoryDialog extends StatelessWidget {
-    final List<String> history;
-    final Color Function(String) getHistoryColor;
+class HistoryDialog extends StatelessWidget {
+  final List<String> history;
+  final Color Function(String) getHistoryColor;
 
-    const HistoryDialog({
-      super.key,
-      required this.history,
-      required this.getHistoryColor,
-    });
+  const HistoryDialog({
+    super.key,
+    required this.history,
+    required this.getHistoryColor,
+  });
 
-    @override
-    Widget build(BuildContext context) {
-      return AlertDialog(
-        title: const Text("Seluruh History"),
-        content: SizedBox(
-          width: double.maxFinite,
-          height: 200, 
-          child: history.isEmpty
-              ? const Text("Belum ada aktivitas")
-              : ListView.builder(
-                  itemCount: history.length,
-                  itemBuilder: (context, index) {
-                    final item = history[index]; 
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: Text(
-                        item,
-                        style: TextStyle(color: getHistoryColor(item)),
-                      ),
-                    );
-                  },
-                ),
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text("Seluruh History"),
+      content: SizedBox(
+        width: double.maxFinite,
+        height: 200,
+        child: history.isEmpty
+            ? const Text("Belum ada aktivitas")
+            : ListView.builder(
+                itemCount: history.length,
+                itemBuilder: (context, index) {
+                  final item = history[index];
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 2),
+                    child: Text(
+                      item,
+                      style: TextStyle(color: getHistoryColor(item)),
+                    ),
+                  );
+                },
+              ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text("Tutup"),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Tutup"),
-          ),
-        ],
-      );
-    }
+      ],
+    );
+  }
 }
