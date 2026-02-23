@@ -13,7 +13,7 @@ class CounterView extends StatefulWidget {
 }
 
 class _CounterViewState extends State<CounterView> {
-  final CounterController _controller = CounterController();
+  late CounterController _controller;
   double _nilaiSlider = 1;
 
   Color _getHistoryColor(String text) {
@@ -30,6 +30,9 @@ class _CounterViewState extends State<CounterView> {
   @override
   void initState() {
     super.initState();
+
+    _controller = CounterController(widget.username);
+
     _controller.loadData().then((_) {
       setState(() {});
     });
@@ -132,7 +135,7 @@ class _CounterViewState extends State<CounterView> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _controller.decrement(widget.username);
+                            _controller.decrement();
                           });
                         },
                         child: const Text('-'),
@@ -152,7 +155,7 @@ class _CounterViewState extends State<CounterView> {
                         ),
                         onPressed: () {
                           setState(() {
-                            _controller.increment(widget.username);
+                            _controller.increment();
                           });
                         },
                         child: const Text('+'),
@@ -189,7 +192,7 @@ class _CounterViewState extends State<CounterView> {
                                   ),
                                   onPressed: () {
                                     setState(() {
-                                      _controller.reset(widget.username);
+                                      _controller.reset();
                                     });
                                     Navigator.pop(context);
                                   },
