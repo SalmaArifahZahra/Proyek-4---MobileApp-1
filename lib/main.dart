@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'features/views/splash_view.dart';
+import 'features/logbook/views/splash_view.dart';
 
 void main() {
   runApp(const MyApp());

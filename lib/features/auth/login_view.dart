@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logbook_app_062/features/auth/login_controller.dart';
-import 'package:logbook_app_062/features/views/welcome_view.dart';
+import 'package:logbook_app_062/features/logbook/views/welcome_view.dart';
 
 class LoginView extends StatefulWidget {
   const LoginView({super.key});
@@ -17,10 +17,10 @@ class _LoginViewState extends State<LoginView> {
   bool _obscurePassword = true;
 
   void _handleLogin() {
-    String user = _userController.text;
-    String pass = _passController.text;
+    String username = _userController.text;
+    String password = _passController.text;
 
-    if (user.isEmpty || pass.isEmpty) {
+    if (username.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Username & Password wajib diisi")),
       );
@@ -36,12 +36,12 @@ class _LoginViewState extends State<LoginView> {
       return;
     }
 
-    bool isSuccess = _controller.login(user, pass);
+    final user = _controller.login(username, password);
 
-    if (isSuccess) {
+    if (user != null) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => WelcomeView(username: user)),
+        MaterialPageRoute(builder: (context) => WelcomeView(user: user)),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,7 +78,7 @@ class _LoginViewState extends State<LoginView> {
                       height: 160,
                       child: Image.asset("assets/images/login.png"),
                     ),
-                     const SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     const Text(
                       "Login",
                       textAlign: TextAlign.center,

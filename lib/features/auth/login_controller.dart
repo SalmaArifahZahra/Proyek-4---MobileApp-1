@@ -1,38 +1,38 @@
+import 'package:logbook_app_062/features/logbook/models/user_model.dart';
 class LoginController {
-  // final String _validUsername = "admin";
-  // final String _validPassword = "123";
 
-  final Map<String, String> _users = {"admin": "123", "salma": "666"};
+  final List<UserModel> _users = [
+    UserModel(id: 1, username: "admin", password: "123"),
+    UserModel(id: 2, username: "salma", password: "666"),
+  ];
 
   int _failedAttempts = 0;
   bool _isLocked = false;
-
   bool get isLocked => _isLocked;
 
-  bool login(String username, String password) {
+   UserModel? login(String username, String password) {
     if (username.isEmpty || password.isEmpty) {
-      return false;
+      return null;
     }
 
-    if (_isLocked) return false;
+    if (_isLocked) return null;
 
-    // if (username == _validUsername && password == _validPassword) {
-    //   _failedAttempts = 0;
-    //   return true;
-    // }
+    try {
+      final user = _users.firstWhere(
+        (u) => u.username == username && u.password == password,
+      );
 
-    if (_users.containsKey(username) && _users[username] == password) {
       _failedAttempts = 0;
-      return true;
+      return user;
+
+    } catch (e) {
+      _failedAttempts++;
+
+      if (_failedAttempts >= 3) {
+        _lockLogin();
+      }
+      return null;
     }
-
-    _failedAttempts++;
-
-    if (_failedAttempts >= 3) {
-      _lockLogin();
-    }
-
-    return false;
   }
 
   void _lockLogin() {

@@ -1,16 +1,16 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../logbook/counter_view.dart';
-import '../../utils/greeting.dart';
+import 'package:logbook_app_062/features/logbook/views/log_view.dart';
+import 'package:logbook_app_062/features/logbook/models/user_model.dart';
 
 class WelcomeView extends StatefulWidget {
-  final String username;
+  final UserModel user;
 
-  const WelcomeView({super.key, required this.username});
+  const WelcomeView({super.key, required this.user});
 
   @override
- State<WelcomeView> createState() => _WelcomeViewState();
+  State<WelcomeView> createState() => _WelcomeViewState();
 }
 
 class _WelcomeViewState extends State<WelcomeView> {
@@ -21,11 +21,23 @@ class _WelcomeViewState extends State<WelcomeView> {
     Timer(const Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(
-          builder: (_) => CounterView(username: widget.username),
-        ),
+        MaterialPageRoute(builder: (_) => LogView(user: widget.user)),
       );
     });
+  }
+
+  static String _getGreeting(String username) {
+    final hour = DateTime.now().hour;
+
+    if (hour >= 5 && hour < 12) {
+      return 'Selamat Pagi, $username!';
+    } else if (hour >= 12 && hour < 16) {
+      return 'Selamat Siang, $username!';
+    } else if (hour >= 16 && hour < 18) {
+      return 'Selamat Sore, $username!';
+    } else {
+      return 'Selamat Malam, $username!';
+    }
   }
 
   @override
@@ -37,20 +49,14 @@ class _WelcomeViewState extends State<WelcomeView> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Lottie.asset(
-              "assets/animation/welcome_cat.json",
-              width: 220,
-            ),
+            Lottie.asset("assets/animation/welcome_cat.json", width: 220),
 
             const SizedBox(height: 20),
 
             Text(
-              Greeting.getGreeting(widget.username),
+              _getGreeting(widget.user.username),
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.bold,
-              ),
+              style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
             ),
 
             const SizedBox(height: 10),
