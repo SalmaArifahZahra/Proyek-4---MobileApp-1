@@ -2,6 +2,9 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logbook_app_062/features/logbook/models/log_model.dart';
+import 'package:logbook_app_062/services/mongo_services.dart';
+import 'package:logbook_app_062/helpers/log_helper.dart';
+import 'package:mongo_dart/mongo_dart.dart';
 
 class LogController {
   final ValueNotifier<List<LogModel>> logsNotifier = ValueNotifier([]);
@@ -23,10 +26,21 @@ class LogController {
       description: desc,
       timestamp: DateTime.now().toString(),
       category: category,
+      mongoId: ObjectId(),
     );
     _logList.add(newLog);
     _updateNotifier();
     await saveToDisk();
+
+    try {
+      await MongoService().insertLog(newLog);
+      await LogHelper.writeLog(
+        "SUCCESS: Add log ke cloud",
+        source: "log_controller.dart",
+      );
+    } catch (e) {
+      await LogHelper.writeLog("ERROR: Gagal add log ke cloud - $e", level: 1);
+    }
   }
 
   Future<void> updateLog(
@@ -124,5 +138,11 @@ class LogController {
           .map((item) => LogModel.fromMap(item))
           .toList();
     }
+  }
+
+  Future<void> fetchLogs() async {
+    // Panggil service untuk ambil data di cloud
+    var dataFromCloud = await MongoService().getLogs();
+    logsNotifier.value = dataFromCloud;
   }
 }
