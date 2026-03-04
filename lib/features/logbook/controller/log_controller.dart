@@ -16,15 +16,18 @@ class LogController {
 
   int? _activeUserId;
 
-  Future<void> addLog(String title, String desc, String category) async {
+  Future<void> addLog(int iduser,
+  String title,
+  String desc,
+  String category,) async {
     final newId = await _getNextLogId();
 
     final newLog = LogModel(
       id: newId,
-      iduser: _activeUserId!,
+      iduser: iduser,
       title: title,
       description: desc,
-      timestamp: DateTime.now().toString(),
+      timestamp: DateTime.now(),
       category: category,
       mongoId: ObjectId(),
     );
@@ -33,7 +36,13 @@ class LogController {
     await saveToDisk();
 
     try {
-      await MongoService().insertLog(newLog);
+      await MongoService().insertLog(
+        newLog.id,
+        newLog.iduser,
+        newLog.title,
+        newLog.description,
+        newLog.category,
+      );
       await LogHelper.writeLog(
         "SUCCESS: Add log ke cloud",
         source: "log_controller.dart",
@@ -55,7 +64,7 @@ class LogController {
       id: oldLog.id,
       iduser: oldLog.iduser,
       title: title,
-      timestamp: DateTime.now().toString(),
+      timestamp: DateTime.now(),
       description: desc,
       category: category,
     );
@@ -138,11 +147,5 @@ class LogController {
           .map((item) => LogModel.fromMap(item))
           .toList();
     }
-  }
-
-  Future<void> fetchLogs() async {
-    // Panggil service untuk ambil data di cloud
-    var dataFromCloud = await MongoService().getLogs();
-    logsNotifier.value = dataFromCloud;
   }
 }

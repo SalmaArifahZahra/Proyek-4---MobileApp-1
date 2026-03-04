@@ -6,7 +6,7 @@ class LogModel {
   final int iduser;
   final String title;
   final String description;
-  final String timestamp;
+  final DateTime timestamp;
   final String category;
 
   LogModel({
@@ -22,12 +22,17 @@ class LogModel {
   factory LogModel.fromMap(Map<String, dynamic> map) {
     return LogModel(
       mongoId: map['_id'] as ObjectId?,
-      id: map['id'],
-      iduser: map['iduser'],
-      title: map['title'],
-      description: map['description'],
-      timestamp: map['timestamp'],
-      category: map['category'],
+      id: map['id'] ?? 0,
+      iduser: map['iduser'] ?? 0,
+      title: map['title']?.toString() ?? '',
+      description: map['description']?.toString() ?? '',
+      timestamp: map['timestamp'] == null
+          ? DateTime.now()
+          : (map['timestamp'] is DateTime
+                ? map['timestamp']
+                : DateTime.tryParse(map['timestamp'].toString()) ??
+                      DateTime.now()),
+      category: map['category']?.toString() ?? 'Lainnya',
     );
   }
 
@@ -38,7 +43,7 @@ class LogModel {
       'iduser': iduser,
       'title': title,
       'description': description,
-      'timestamp': timestamp,
+      'timestamp': timestamp.toIso8601String(),
       'category': category,
     };
   }

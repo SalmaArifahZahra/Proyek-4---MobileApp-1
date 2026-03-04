@@ -1,14 +1,14 @@
 import 'dart:developer' as dev;
-import 'package:intl/intl.dart'; // Tetap kita gunakan untuk presisi waktu
+import 'package:intl/intl.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'dart:io';
 
 class LogHelper {
   static Future<void> writeLog(
     String message, {
-    String source = "Unknown", // Menandakan file/proses asal
+    String source = "Unknown",
     int level = 2,
   }) async {
-    // 1. Filter Konfigurasi (ENV)
     final int configLevel = int.tryParse(dotenv.env['LOG_LEVEL'] ?? '2') ?? 2;
     final String muteList = dotenv.env['LOG_MUTE'] ?? '';
 
@@ -16,18 +16,36 @@ class LogHelper {
     if (muteList.split(',').contains(source)) return;
 
     try {
-      // 2. Format Waktu untuk Konsol
       String timestamp = DateFormat('HH:mm:ss').format(DateTime.now());
       String label = _getLabel(level);
       String color = _getColor(level);
 
-      // 3. Output ke VS Code Debug Console (Non-blocking)
       dev.log(message, name: source, time: DateTime.now(), level: level * 100);
 
-      // 4. Output ke Terminal (Agar Bapak bisa lihat di PC saat flutter run)
-      // Format: [14:30:05] [INFO] [log_view.dart] -> Database Terhubung
+
       // ignore: avoid_print
       print('$color[$timestamp][$label][$source] -> $message\x1B[0m');
+
+      final now = DateTime.now();
+      final fileName =
+          "${now.day.toString().padLeft(2, '0')}-"
+          "${now.month.toString().padLeft(2, '0')}-"
+          "${now.year}.log";
+
+      final directory = Directory("logs");
+      if (!await directory.exists()) {
+        await directory.create();
+      }
+
+      final file = File("logs/$fileName");
+
+      final fileTimestamp =
+          DateFormat('HH:mm:ss').format(now);
+
+      await file.writeAsString(
+        "[$fileTimestamp][$label][$source] -> $message\n",
+        mode: FileMode.append,
+      );
     } catch (e) {
       dev.log("Logging failed: $e", name: "SYSTEM", level: 1000);
     }

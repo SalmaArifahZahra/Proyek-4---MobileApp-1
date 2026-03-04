@@ -6,7 +6,6 @@ import 'package:logbook_app_062/helpers/log_helper.dart';
 class MongoService {
   static final MongoService _instance = MongoService._internal();
 
-  // Menggunakan nullable agar kita bisa mengecek status inisialisasi
   Db? _db;
   DbCollection? _collection;
 
@@ -15,7 +14,6 @@ class MongoService {
   factory MongoService() => _instance;
   MongoService._internal();
 
-  /// Fungsi Internal untuk memastikan koleksi siap digunakan (Anti-LateInitializationError)
   Future<DbCollection> _getSafeCollection() async {
     if (_db == null || !_db!.isConnected || _collection == null) {
       await LogHelper.writeLog(
@@ -28,7 +26,6 @@ class MongoService {
     return _collection!;
   }
 
-  /// Inisialisasi Koneksi ke MongoDB Atlas
   Future<void> connect() async {
     try {
       final dbUri = dotenv.env['MONGODB_URI'];
@@ -36,7 +33,6 @@ class MongoService {
 
       _db = await Db.create(dbUri);
 
-      // Timeout 15 detik agar lebih toleran terhadap jaringan seluler
       await _db!.open().timeout(
         const Duration(seconds: 15),
         onTimeout: () {
@@ -63,43 +59,62 @@ class MongoService {
     }
   }
 
-  /// READ: Mengambil data dari Cloud
   Future<List<LogModel>> getLogs() async {
     try {
-      final collection = await _getSafeCollection(); // Gunakan jalur aman
-
       await LogHelper.writeLog(
-        "INFO: Fetching data from Cloud...",
+        "[GET] REQUEST: Memulai pengambilan data dari Cloud...",
         source: _source,
         level: 3,
       );
 
+      final collection = await _getSafeCollection();
       final List<Map<String, dynamic>> data = await collection.find().toList();
+
+      await LogHelper.writeLog(
+        "[GET] SUCCESS: ${data.length} Data berhasil diambil ",
+        source: _source,
+        level: 3,
+      );
+
       return data.map((json) => LogModel.fromMap(json)).toList();
     } catch (e) {
-      await LogHelper.writeLog(
-        "ERROR: Fetch Failed - $e",
-        source: _source,
-        level: 1,
-      );
-      return [];
+      await LogHelper.writeLog("[GET] ERROR - $e", source: _source, level: 1);
+      rethrow;
     }
   }
 
-  /// CREATE: Menambahkan data baru
-  Future<void> insertLog(LogModel log) async {
+  Future<void> insertLog(
+    int id,
+    int iduser,
+    String title,
+    String description,
+    String category,
+  ) async {
     try {
+      await LogHelper.writeLog(
+        "[INSERT] REQUEST - User $iduser: Menambahkan '$title' ke Cloud...",
+        source: _source,
+        level: 3,
+      );
+
       final collection = await _getSafeCollection();
-      await collection.insertOne(log.toMap());
+
+      await collection.insertOne({
+        "iduser": iduser,
+        "title": title,
+        "description": description,
+        "category": category,
+        "createdAt": DateTime.now().toIso8601String(),
+      });
 
       await LogHelper.writeLog(
-        "SUCCESS: Data '${log.title}' Saved to Cloud",
+        "[INSERT] SUCCESS: Data '$title' Saved to Cloud",
         source: _source,
         level: 2,
       );
     } catch (e) {
       await LogHelper.writeLog(
-        "ERROR: Insert Failed - $e",
+        "[INSERT] ERROR: Insert Failed - $e",
         source: _source,
         level: 1,
       );
@@ -107,24 +122,31 @@ class MongoService {
     }
   }
 
-  /// UPDATE: Memperbarui data berdasarkan ID
   Future<void> updateLog(LogModel log) async {
     try {
+      await LogHelper.writeLog(
+        "[UPDATE] REQUEST - ID ${log.mongoId}",
+        source: _source,
+        level: 3,
+      );
+
       final collection = await _getSafeCollection();
-      if (log.mongoId == null)
+
+      if (log.mongoId == null) {
         // ignore: curly_braces_in_flow_control_structures
         throw Exception("ID Log tidak ditemukan untuk update");
+      }
 
       await collection.replaceOne(where.id(log.mongoId!), log.toMap());
 
       await LogHelper.writeLog(
-        "DATABASE: Update '${log.title}' Berhasil",
+        "[UPDATE] SUCCESS: Update '${log.title}' Berhasil",
         source: _source,
         level: 2,
       );
     } catch (e) {
       await LogHelper.writeLog(
-        "DATABASE: Update Gagal - $e",
+        "[UPDATE] ERROR: Update Gagal - $e",
         source: _source,
         level: 1,
       );
@@ -132,20 +154,25 @@ class MongoService {
     }
   }
 
-  /// DELETE: Menghapus dokumen
   Future<void> deleteLog(ObjectId id) async {
     try {
+      await LogHelper.writeLog(
+        "[DELETE] REQUEST - ID $id: Menghapus data dari Cloud...",
+        source: _source,
+        level: 3,
+      );
+
       final collection = await _getSafeCollection();
       await collection.remove(where.id(id));
 
       await LogHelper.writeLog(
-        "DATABASE: Hapus ID $id Berhasil",
+        "[DELETE] SUCCESS: Hapus ID $id Berhasil",
         source: _source,
         level: 2,
       );
     } catch (e) {
       await LogHelper.writeLog(
-        "DATABASE: Hapus Gagal - $e",
+        "[DELETE] ERROR - $e",
         source: _source,
         level: 1,
       );
