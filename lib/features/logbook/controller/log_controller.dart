@@ -1,151 +1,110 @@
-import 'dart:convert';
-import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logbook_app_062/features/logbook/models/log_model.dart';
-import 'package:logbook_app_062/services/mongo_services.dart';
-import 'package:logbook_app_062/helpers/log_helper.dart';
-import 'package:mongo_dart/mongo_dart.dart';
+import 'package:logbook_app_062/services/log_data_service.dart';
+import 'package:uuid/uuid.dart';
 
 class LogController {
+
+  final LogDataService service = LogDataService();
+
   final ValueNotifier<List<LogModel>> logsNotifier = ValueNotifier([]);
+  final ValueNotifier<bool> loadingNotifier = ValueNotifier(false);
 
-  static const String _storageKey = 'user_logs_data';
-  static const String _idKey = 'id_log_counter';
-
-  final List<LogModel> _logList = [];
-
-  int? _activeUserId;
-
-  Future<void> addLog(int iduser,
-  String title,
-  String desc,
-  String category,) async {
-    final newId = await _getNextLogId();
-
-    final newLog = LogModel(
-      id: newId,
-      iduser: iduser,
-      title: title,
-      description: desc,
-      timestamp: DateTime.now(),
-      category: category,
-      mongoId: ObjectId(),
-    );
-    _logList.add(newLog);
-    _updateNotifier();
-    await saveToDisk();
-
-    try {
-      await MongoService().insertLog(
-        newLog.id,
-        newLog.iduser,
-        newLog.title,
-        newLog.description,
-        newLog.category,
-      );
-      await LogHelper.writeLog(
-        "SUCCESS: Add log ke cloud",
-        source: "log_controller.dart",
-      );
-    } catch (e) {
-      await LogHelper.writeLog("ERROR: Gagal add log ke cloud - $e", level: 1);
-    }
+  Future<List<LogModel>> getLocalLogs(String teamId) async {
+    return await service.getLocalLogs(teamId);
   }
 
-  Future<void> updateLog(
-    int index,
-    String title,
-    String desc,
-    String category,
-  ) async {
-    final oldLog = _logList[index];
+  Future<List<LogModel>> getCloudLogs(String teamId) async {
+    return await service.getCloudLogs(teamId);
+  }
+
+  Future<void> fetchLogs(int teamId) async {
+
+    loadingNotifier.value = true;
+
+    final String teamIdStr = teamId.toString();
+
+    final localLogs = await service.getLocalLogs(teamIdStr);
+
+    await service.syncLogs();
+
+    final cloudLogs = await service.getCloudLogs(teamIdStr);
+
+    final Map<String, LogModel> merged = {};
+
+    for (var log in cloudLogs) {
+      merged[log.id] = log;
+    }
+
+    for (var log in localLogs) {
+      merged[log.id] = log;
+    }
+
+    logsNotifier.value = merged.values.toList();
+
+    loadingNotifier.value = false;
+  }
+
+  Future<void> addLog({
+    required int iduser,
+    required String title,
+    required String description,
+    required String category,
+    required int teamId,
+  }) async {
+
+    final newLog = LogModel(
+      id: const Uuid().v4(),
+      iduser: iduser,
+      title: title,
+      description: description.trim(),
+      timestamp: DateTime.now(),
+      category: category,
+      teamId: teamId,
+      isSynced: false,
+      isDeleted: false,
+    );
+
+    final insertedLog = await service.createLog(newLog);
+
+    logsNotifier.value = [...logsNotifier.value, insertedLog];
+  }
+
+  Future<void> updateLog({
+    required LogModel oldLog,
+    required String title,
+    required String description,
+    required String category,
+  }) async {
 
     final updatedLog = LogModel(
       id: oldLog.id,
       iduser: oldLog.iduser,
       title: title,
+      description: description.trim(),
       timestamp: DateTime.now(),
-      description: desc,
       category: category,
+      teamId: oldLog.teamId,
+      isSynced: false,
+      isDeleted: false,
     );
 
-    _logList[index] = updatedLog;
-    _updateNotifier();
-    await saveToDisk();
-  }
+    await service.modifyLog(updatedLog);
 
-  void removeLog(int index) {
-    _logList.removeAt(index);
-    _updateNotifier();
-    saveToDisk();
-  }
+    final logs = [...logsNotifier.value];
+    final index = logs.indexWhere((log) => log.id == oldLog.id);
 
-  Future<int> _getNextLogId() async {
-    final prefs = await SharedPreferences.getInstance();
-    int currentId = prefs.getInt(_idKey) ?? 0;
-
-    currentId++;
-    await prefs.setInt(_idKey, currentId);
-
-    return currentId;
-  }
-
-  void searchLog(String query) {
-    if (_activeUserId == null) return;
-
-    final logUser = _logList
-        .where((log) => log.iduser == _activeUserId)
-        .toList();
-
-    if (query.isEmpty) {
-      logsNotifier.value = logUser;
-    } else {
-      logsNotifier.value = logUser
-          .where((log) => log.title.toLowerCase().contains(query.toLowerCase()))
-          .toList();
+    if (index != -1) {
+      logs[index] = updatedLog;
+      logsNotifier.value = logs;
     }
   }
 
-  void _updateNotifier() {
-    if (_activeUserId == null) return;
+  Future<void> removeLog(LogModel log) async {
 
-    logsNotifier.value = _logList
-        .where((log) => log.iduser == _activeUserId)
-        .toList();
-  }
+    await service.eraseLog(log);
 
-  Future<void> saveToDisk() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String encodedData = jsonEncode(
-      _logList.map((e) => e.toMap()).toList(),
-    );
-    await prefs.setString(_storageKey, encodedData);
-  }
-
-  Future<void> loadFromDisk(int iduser) async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? data = prefs.getString(_storageKey);
-
-    _activeUserId = iduser;
-
-    if (data != null) {
-      final List decoded = jsonDecode(data);
-      _logList.clear();
-      _logList.addAll(decoded.map((e) => LogModel.fromMap(e)).toList());
-      _updateNotifier();
-    }
-  }
-
-  Future<void> loadLogs() async {
-    final prefs = await SharedPreferences.getInstance();
-    String? rawJson = prefs.getString('saved_logs');
-
-    if (rawJson != null) {
-      Iterable decoded = jsonDecode(rawJson);
-
-      logsNotifier.value = decoded
-          .map((item) => LogModel.fromMap(item))
-          .toList();
-    }
+    logsNotifier.value =
+        logsNotifier.value.where((l) => l.id != log.id).toList();
   }
 }

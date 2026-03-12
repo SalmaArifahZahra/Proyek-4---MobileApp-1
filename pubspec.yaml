@@ -40,13 +40,19 @@ dependencies:
   flutter_dotenv: ^6.0.0
   intl: ^0.20.2
   basic_utils: 5.7.0
-  
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  connectivity_plus: ^7.0.0
+  flutter_markdown: ^0.7.7+1
+  uuid: ^4.4.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_native_splash: ^2.4.0
   flutter_lints: ^6.0.0
+  build_runner: ^2.4.13
+  hive_generator: ^2.0.1
 
 flutter_native_splash:
   color: "#38bdf8"

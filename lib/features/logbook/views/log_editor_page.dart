@@ -1,153 +1,160 @@
-// import 'package:flutter/material.dart';
-// import 'package:flutter_markdown/flutter_markdown.dart';
-// import 'package:logbook_app_062/features/logbook/controller/log_controller.dart';
-// import 'package:logbook_app_062/features/logbook/models/log_model.dart';
-// import 'package:logbook_app_062/features/logbook/models/user_model.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:logbook_app_062/features/logbook/controller/log_controller.dart';
+import 'package:logbook_app_062/features/logbook/models/log_model.dart';
+import 'package:logbook_app_062/features/logbook/models/user_model.dart';
 
-// class LogEditorPage extends StatefulWidget {
-//   final LogModel? log;
-//   final LogController controller;
-//   final UserModel user;
+class LogEditorPage extends StatefulWidget {
+  final LogModel? log;
+  final LogController controller;
+  final UserModel user;
 
-//   const LogEditorPage({
-//     super.key,
-//     this.log,
-//     required this.controller,
-//     required this.user,
-//   });
+  const LogEditorPage({
+    super.key,
+    this.log,
+    required this.controller,
+    required this.user,
+  });
 
-//   @override
-//   State<LogEditorPage> createState() => _LogEditorPageState();
-// }
+  @override
+  State<LogEditorPage> createState() => _LogEditorPageState();
+}
 
-// class _LogEditorPageState extends State<LogEditorPage> {
-//   late TextEditingController _titleController;
-//   late TextEditingController _descController;
+class _LogEditorPageState extends State<LogEditorPage> {
+  late TextEditingController _titleController;
+  late TextEditingController _descController;
 
-//   String _selectedCategory = "Mechanical";
+  String _selectedCategory = "Mechanical";
 
-//   final List<String> _categories = ["Mechanical", "Electronic", "Software"];
+  final List<String> _categories = ["Mechanical", "Electronic", "Software"];
 
-//   @override
-//   void initState() {
-//     super.initState();
+  @override
+  void initState() {
+    super.initState();
 
-//     _titleController = TextEditingController(text: widget.log?.title ?? '');
+    _titleController = TextEditingController(text: widget.log?.title ?? '');
 
-//     _descController = TextEditingController(
-//       text: widget.log?.description ?? '',
-//     );
+    _descController = TextEditingController(
+      text: widget.log?.description ?? '',
+    );
 
-//     if (widget.log != null) {
-//       _selectedCategory = widget.log!.category;
-//     }
+    if (widget.log != null) {
+      _selectedCategory = widget.log!.category;
+    }
 
-//     _descController.addListener(() {
-//       setState(() {});
-//     });
-//   }
+    _descController.addListener(() {
+      setState(() {});
+    });
+  }
 
-//   void _save() {
-//     if (widget.log == null) {
-//       widget.controller.addLog(
-//         iduser: widget.user.id,
-//         title: _titleController.text,
-//         description: _descController.text,
-//         category: _selectedCategory,
-//         teamId: widget.user.teamId.first,
-//       );
-//     } else {
-//       widget.controller.updateLog(
-//         oldLog: widget.log!,
-//         title: _titleController.text,
-//         description: _descController.text,
-//         category: _selectedCategory,
-//       );
-//     }
+  void _save() {
+    if (_titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Judul tidak boleh kosong")));
+      return;
+    }
 
-//     Navigator.pop(context);
-//   }
+    if (widget.log == null) {
+      widget.controller.addLog(
+        iduser: widget.user.id,
+        title: _titleController.text,
+        description: _descController.text,
+        category: _selectedCategory,
+        teamId: widget.user.teamId.first,
+      );
+    } else {
+      widget.controller.updateLog(
+        oldLog: widget.log!,
+        title: _titleController.text,
+        description: _descController.text,
+        category: _selectedCategory,
+      );
+    }
 
-//   @override
-//   void dispose() {
-//     _titleController.dispose();
-//     _descController.dispose();
-//     super.dispose();
-//   }
+    Navigator.pop(context);
+  }
 
-//   @override
-//   Widget build(BuildContext context) {
-//     return DefaultTabController(
-//       length: 2,
-//       child: Scaffold(
-//         appBar: AppBar(
-//           title: Text(widget.log == null ? "Catatan Baru" : "Edit Catatan"),
-//           bottom: const TabBar(
-//             tabs: [
-//               Tab(text: "Editor"),
-//               Tab(text: "Pratinjau"),
-//             ],
-//           ),
-//           actions: [IconButton(icon: const Icon(Icons.save), onPressed: _save)],
-//         ),
-//         body: TabBarView(
-//           children: [
-//             /// Tab Editor
-//             Padding(
-//               padding: const EdgeInsets.all(16.0),
-//               child: Column(
-//                 children: [
-//                   /// Judul
-//                   TextField(
-//                     controller: _titleController,
-//                     decoration: const InputDecoration(labelText: "Judul"),
-//                   ),
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
 
-//                   const SizedBox(height: 10),
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(widget.log == null ? "Catatan Baru" : "Edit Catatan"),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: "Editor"),
+              Tab(text: "Pratinjau"),
+            ],
+          ),
+          actions: [IconButton(icon: const Icon(Icons.save), onPressed: _save)],
+        ),
+        body: TabBarView(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    decoration: const InputDecoration(labelText: "Judul"),
+                  ),
 
-//                   /// Dropdown kategori
-//                   DropdownButtonFormField<String>(
-//                     initialValue: _selectedCategory,
-//                     decoration: const InputDecoration(
-//                       labelText: "Kategori",
-//                       border: OutlineInputBorder(),
-//                     ),
-//                     items: _categories.map((category) {
-//                       return DropdownMenuItem(
-//                         value: category,
-//                         child: Text(category),
-//                       );
-//                     }).toList(),
-//                     onChanged: (value) {
-//                       setState(() {
-//                         _selectedCategory = value!;
-//                       });
-//                     },
-//                   ),
+                  const SizedBox(height: 10),
 
-//                   const SizedBox(height: 10),
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedCategory,
+                    decoration: const InputDecoration(
+                      labelText: "Kategori",
+                      border: OutlineInputBorder(),
+                    ),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedCategory = value!;
+                      });
+                    },
+                  ),
 
-//                   /// Deskripsi Markdown
-//                   Expanded(
-//                     child: TextField(
-//                       controller: _descController,
-//                       maxLines: null,
-//                       expands: true,
-//                       keyboardType: TextInputType.multiline,
-//                       decoration: const InputDecoration(
-//                         hintText: "Tulis laporan dengan format Markdown...",
-//                         border: InputBorder.none,
-//                       ),
-//                     ),
-//                   ),
-//                 ],
-//               ),
-//             ),
+                  const SizedBox(height: 10),
 
-//             Markdown(data: _descController.text),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
+                  /// Deskripsi Markdown
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.all(8),
+                      child: TextField(
+                        controller: _descController,
+                        maxLines: null,
+                        expands: true,
+                        keyboardType: TextInputType.multiline,
+                        decoration: const InputDecoration(
+                          hintText: "Tulis laporan dengan format Markdown...",
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            Markdown(data: _descController.text),
+          ],
+        ),
+      ),
+    );
+  }
+}

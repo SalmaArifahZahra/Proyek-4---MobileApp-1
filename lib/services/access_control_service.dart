@@ -20,15 +20,12 @@ class AccessPolicy {
     final permissions = _rolePermissions[role] ?? [];
     if (!permissions.contains(action)) return false;
 
-    // Manager bebas akses semua
     if (role == 'Manager') return true;
 
-    // Supervisor & Karyawan hanya bisa Update & Delete jika dia pemiliknya (isOwner)
     if (action == actionUpdate || action == actionDelete) {
       return isOwner;
     }
 
-    // Untuk Create dan Read, mereka selalu diizinkan
     return true;
   }
 }
