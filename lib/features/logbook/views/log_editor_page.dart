@@ -99,6 +99,7 @@ class _LogEditorPageState extends State<LogEditorPage> {
         ),
         body: TabBarView(
           children: [
+            // Editor
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
@@ -107,43 +108,25 @@ class _LogEditorPageState extends State<LogEditorPage> {
                     controller: _titleController,
                     decoration: const InputDecoration(labelText: "Judul"),
                   ),
-
                   const SizedBox(height: 10),
-
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCategory,
-                    decoration: const InputDecoration(
-                      labelText: "Kategori",
-                      border: OutlineInputBorder(),
-                    ),
-                    items: _categories.map((category) {
-                      return DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      );
-                    }).toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedCategory = value!;
-                      });
-                    },
+                    decoration: const InputDecoration(labelText: "Kategori"),
+                    items: _categories
+                        .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                        .toList(),
+                    onChanged: (v) => setState(() => _selectedCategory = v!),
                   ),
-
                   const SizedBox(height: 10),
-
-                  /// Deskripsi Markdown
                   Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.all(8),
-                      child: TextField(
-                        controller: _descController,
-                        maxLines: null,
-                        expands: true,
-                        keyboardType: TextInputType.multiline,
-                        decoration: const InputDecoration(
-                          hintText: "Tulis laporan dengan format Markdown...",
-                          border: InputBorder.none,
-                        ),
+                    child: TextField(
+                      controller: _descController,
+                      maxLines: null,
+                      expands: true,
+                      keyboardType: TextInputType.multiline,
+                      decoration: const InputDecoration(
+                        hintText: "Tulis laporan dengan format Markdown...",
+                        border: InputBorder.none,
                       ),
                     ),
                   ),
@@ -151,7 +134,27 @@ class _LogEditorPageState extends State<LogEditorPage> {
               ),
             ),
 
-            Markdown(data: _descController.text),
+            // Preview
+            ValueListenableBuilder<TextEditingValue>(
+              valueListenable: _descController,
+              builder: (context, value, child) {
+                return Markdown(
+                  data: value.text,
+                  styleSheet: MarkdownStyleSheet(
+                    h1: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    h2: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    p: const TextStyle(fontSize: 16),
+                    listBullet: const TextStyle(fontSize: 16),
+                  ),
+                );
+              },
+            ),
           ],
         ),
       ),

@@ -181,7 +181,6 @@ class MongoService {
     }
   }
 
-  /// menutup koneksi database
   Future<void> close() async {
     if (_db != null) {
       await _db!.close();

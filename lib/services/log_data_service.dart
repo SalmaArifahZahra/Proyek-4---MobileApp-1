@@ -37,10 +37,14 @@ class LogDataService {
   }
 
   Future<void> modifyLog(LogModel log) async {
-    await local.updateLog(log);
+    final updatedLog = log.copyWith(isSynced: false);
+
+    await local.updateLog(updatedLog);
 
     try {
-      await cloud.updateLog(log);
+      await cloud.updateLog(updatedLog);
+
+      await local.updateLog(updatedLog.copyWith(isSynced: true));
     } catch (_) {}
   }
 

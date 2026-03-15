@@ -33,7 +33,7 @@ class HiveService {
       for (var log in logs) {
         if (!log.isSynced && !log.isDeleted) {
           try {
-            await _mongo.insertLog(log);
+            await _mongo.updateLog(log);
 
             await _local.updateLog(log.copyWith(isSynced: true));
           } catch (_) {
@@ -44,7 +44,6 @@ class HiveService {
         if (log.isDeleted) {
           try {
             await _mongo.deleteLog(log.id);
-
             await _local.deleteLog(log.id);
           } catch (_) {
             continue;
