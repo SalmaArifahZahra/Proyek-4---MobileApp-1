@@ -6,22 +6,20 @@ class LogDataService {
   final MongoService cloud = MongoService();
   final OfflineLog local = OfflineLog();
 
-  /// load logs
-  Future<List<LogModel>> loadLogs(int teamId) async {
+  Future<List<LogModel>> loadLogs() async {
     try {
-      final cloudLogs = await cloud.getLogs(teamId);
+      final cloudLogs = await cloud.getLogs();
 
       for (var log in cloudLogs) {
-        await local.updateLog(log.copyWith(isSynced: true));
+        await local.saveLog(log.copyWith(isSynced: true));
       }
     } catch (_) {}
 
     final localLogs = await local.getLogs();
 
-    return localLogs.where((l) => l.teamId == teamId && !l.isDeleted).toList();
+    return localLogs.where((l) => !l.isDeleted).toList();
   }
 
-  /// create log
   Future<LogModel> createLog(LogModel log) async {
     await local.saveLog(log);
 
@@ -38,7 +36,6 @@ class LogDataService {
     }
   }
 
-  /// update log
   Future<void> modifyLog(LogModel log) async {
     await local.updateLog(log);
 
@@ -47,7 +44,6 @@ class LogDataService {
     } catch (_) {}
   }
 
-  /// delete log
   Future<void> eraseLog(LogModel log) async {
     await local.markDeleted(log);
 
@@ -62,38 +58,35 @@ class LogDataService {
     return await local.fetchLogs(int.parse(teamId));
   }
 
-  Future<List<LogModel>> getCloudLogs(String teamId) async {
-    return await cloud.getLogs(int.parse(teamId));
+  Future<List<LogModel>> getCloudLogs() async {
+    return await cloud.getLogs();
   }
 
   Future<void> syncLogs() async {
+    final allLogs = await local.retrieveAllLogs();
 
-  final allLogs = await local.retrieveAllLogs();
+    final unsynced = allLogs.where((l) => !l.isSynced).toList();
 
-  final unsynced = allLogs.where((l) => !l.isSynced).toList();
+    for (var log in unsynced) {
+      try {
+        if (log.isDeleted) {
+          await cloud.deleteLog(log.id);
 
-  for (var log in unsynced) {
+          await local.removeLocalLog(log.id);
 
-    try {
+          continue;
+        }
 
-      if (log.isDeleted) {
+        try {
+          await cloud.updateLog(log);
+        } catch (_) {
+          await cloud.insertLog(log);
+        }
 
-        await cloud.deleteLog(log.id);
+        final syncedLog = log.copyWith(isSynced: true);
 
-        await local.removeLocalLog(log.id);
-
-        continue;
-      }
-
-      await cloud.insertLog(log);
-
-      final syncedLog = log.copyWith(
-        isSynced: true,
-      );
-
-      await local.updateLog(syncedLog);
-
-    } catch (_) {}
+        await local.updateLog(syncedLog);
+      } catch (_) {}
+    }
   }
-}
 }

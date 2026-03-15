@@ -29,7 +29,6 @@ class MongoService {
     return _collection!;
   }
 
-
   Future<void> connect() async {
     try {
       final dbUri = dotenv.env['MONGODB_URI'];
@@ -65,17 +64,17 @@ class MongoService {
     }
   }
 
-  Future<List<LogModel>> getLogs(int teamId) async {
+  Future<List<LogModel>> getLogs() async {
     try {
       final collection = await _getSafeCollection();
 
+      final data = await collection.find().toList();
+
       await LogHelper.writeLog(
-        "INFO: Mengambil log Team $teamId dari cloud",
+        "INFO: Mengambil semua log dari cloud",
         source: _source,
         level: 3,
       );
-
-      final data = await collection.find(where.eq('teamId', teamId)).toList();
 
       return data.map((e) => LogModel.fromMap(e)).toList();
     } catch (e) {
@@ -88,7 +87,6 @@ class MongoService {
       return [];
     }
   }
-
 
   Future<void> insertLog(LogModel log) async {
     try {
@@ -126,7 +124,6 @@ class MongoService {
       rethrow;
     }
   }
-
 
   Future<void> updateLog(LogModel log) async {
     try {

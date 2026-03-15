@@ -6,6 +6,8 @@ import 'package:logbook_app_062/features/logbook/views/log_editor_page.dart';
 import 'package:logbook_app_062/features/logbook/controller/log_controller.dart';
 import 'package:logbook_app_062/component/app_bar.dart';
 import 'package:logbook_app_062/features/logbook/views/counter_view.dart';
+import 'package:logbook_app_062/services/access_control_service.dart';
+import 'package:logbook_app_062/services/hive_service.dart';
 
 class LogView extends StatefulWidget {
   final UserModel user;
@@ -18,6 +20,7 @@ class LogView extends StatefulWidget {
 
 class _LogViewState extends State<LogView> {
   late final LogController _controller;
+  late final HiveService hiveService;
 
   String _searchQuery = "";
 
@@ -39,7 +42,13 @@ class _LogViewState extends State<LogView> {
     super.initState();
 
     _controller = LogController();
-    _controller.fetchLogs(widget.user.teamId.first);
+    hiveService = HiveService();
+
+    _controller.fetchLogs(widget.user.teamId);
+
+    hiveService.syncTrigger.addListener(() {
+      _controller.fetchLogs(widget.user.teamId);
+    });
   }
 
   void _goToEditor({LogModel? log}) {
@@ -49,7 +58,9 @@ class _LogViewState extends State<LogView> {
         builder: (context) =>
             LogEditorPage(log: log, controller: _controller, user: widget.user),
       ),
-    );
+    ).then((_) {
+      _controller.fetchLogs(widget.user.teamId);
+    });
   }
 
   @override
@@ -103,7 +114,9 @@ class _LogViewState extends State<LogView> {
             child: ValueListenableBuilder<List<LogModel>>(
               valueListenable: _controller.logsNotifier,
               builder: (context, currentLogs, child) {
-                final logs = currentLogs.where((log) {
+                List<LogModel> logs = currentLogs;
+
+                logs = logs.where((log) {
                   return log.title.toLowerCase().contains(
                         _searchQuery.toLowerCase(),
                       ) ||
@@ -111,7 +124,6 @@ class _LogViewState extends State<LogView> {
                         _searchQuery.toLowerCase(),
                       );
                 }).toList();
-
                 if (logs.isEmpty) {
                   return Center(
                     child: Column(
@@ -135,13 +147,24 @@ class _LogViewState extends State<LogView> {
 
                 return RefreshIndicator(
                   onRefresh: () async {
-                    await _controller.fetchLogs(widget.user.teamId.first);
+                    await _controller.fetchLogs(widget.user.teamId);
                   },
                   child: ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
                     itemCount: logs.length,
                     itemBuilder: (context, index) {
                       final log = logs[index];
+                      final canEdit = AccessPolicy.canPerform(
+                        widget.user.role,
+                        AccessPolicy.actionUpdate,
+                        isOwner: log.iduser == widget.user.id,
+                      );
+
+                      final canDelete = AccessPolicy.canPerform(
+                        widget.user.role,
+                        AccessPolicy.actionDelete,
+                        isOwner: log.iduser == widget.user.id,
+                      );
 
                       return Card(
                         margin: const EdgeInsets.symmetric(
@@ -190,45 +213,49 @@ class _LogViewState extends State<LogView> {
                           trailing: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.edit,
-                                  color: Colors.blue,
+                              if (canEdit)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.edit,
+                                    color: Colors.blue,
+                                  ),
+                                  onPressed: () => _goToEditor(log: log),
                                 ),
-                                onPressed: () => _goToEditor(log: log),
-                              ),
 
-                              IconButton(
-                                icon: const Icon(
-                                  Icons.delete,
-                                  color: Colors.red,
+                              if (canDelete)
+                                IconButton(
+                                  icon: const Icon(
+                                    Icons.delete,
+                                    color: Colors.red,
+                                  ),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text("Konfirmasi Hapus"),
+                                        content: const Text(
+                                          "Hapus catatan ini?",
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, false),
+                                            child: const Text("Batal"),
+                                          ),
+                                          ElevatedButton(
+                                            onPressed: () =>
+                                                Navigator.pop(context, true),
+                                            child: const Text("Hapus"),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+
+                                    if (confirm == true) {
+                                      await _controller.removeLog(log);
+                                    }
+                                  },
                                 ),
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (context) => AlertDialog(
-                                      title: const Text("Konfirmasi Hapus"),
-                                      content: const Text("Hapus catatan ini?"),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, false),
-                                          child: const Text("Batal"),
-                                        ),
-                                        ElevatedButton(
-                                          onPressed: () =>
-                                              Navigator.pop(context, true),
-                                          child: const Text("Hapus"),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirm == true) {
-                                    await _controller.removeLog(log);
-                                  }
-                                },
-                              ),
                             ],
                           ),
                         ),

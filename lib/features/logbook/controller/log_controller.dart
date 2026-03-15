@@ -4,7 +4,6 @@ import 'package:logbook_app_062/services/log_data_service.dart';
 import 'package:uuid/uuid.dart';
 
 class LogController {
-
   final LogDataService service = LogDataService();
 
   final ValueNotifier<List<LogModel>> logsNotifier = ValueNotifier([]);
@@ -15,29 +14,28 @@ class LogController {
   }
 
   Future<List<LogModel>> getCloudLogs(String teamId) async {
-    return await service.getCloudLogs(teamId);
+    return await service.getCloudLogs();
   }
 
-  Future<void> fetchLogs(int teamId) async {
-
+  Future<void> fetchLogs(List<int> teamIdx) async {
     loadingNotifier.value = true;
-
-    final String teamIdStr = teamId.toString();
-
-    final localLogs = await service.getLocalLogs(teamIdStr);
-
-    await service.syncLogs();
-
-    final cloudLogs = await service.getCloudLogs(teamIdStr);
 
     final Map<String, LogModel> merged = {};
 
-    for (var log in cloudLogs) {
-      merged[log.id] = log;
-    }
+    for (final teamId in teamIdx) {
+      final localLogs = await service.getLocalLogs(teamId.toString());
 
-    for (var log in localLogs) {
-      merged[log.id] = log;
+      await service.syncLogs();
+
+      final cloudLogs = await service.getCloudLogs();
+
+      for (var log in cloudLogs) {
+        merged[log.id] = log;
+      }
+
+      for (var log in localLogs) {
+        merged[log.id] = log;
+      }
     }
 
     logsNotifier.value = merged.values.toList();
@@ -52,7 +50,6 @@ class LogController {
     required String category,
     required int teamId,
   }) async {
-
     final newLog = LogModel(
       id: const Uuid().v4(),
       iduser: iduser,
@@ -76,7 +73,6 @@ class LogController {
     required String description,
     required String category,
   }) async {
-
     final updatedLog = LogModel(
       id: oldLog.id,
       iduser: oldLog.iduser,
@@ -101,10 +97,10 @@ class LogController {
   }
 
   Future<void> removeLog(LogModel log) async {
-
     await service.eraseLog(log);
 
-    logsNotifier.value =
-        logsNotifier.value.where((l) => l.id != log.id).toList();
+    logsNotifier.value = logsNotifier.value
+        .where((l) => l.id != log.id)
+        .toList();
   }
 }

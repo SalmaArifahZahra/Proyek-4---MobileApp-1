@@ -1,4 +1,5 @@
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:logbook_app_062/services/mongo_services.dart';
 import 'package:logbook_app_062/services/offline_log.dart';
 
@@ -7,15 +8,16 @@ class HiveService {
   final OfflineLog _local = OfflineLog();
   final MongoService _mongo = MongoService();
 
+  final ValueNotifier<bool> syncTrigger = ValueNotifier(false);
+
   bool _isSyncing = false;
 
-  void startListening() {
+  void viaConnectivity() {
     _connectivity.onConnectivityChanged.listen((results) async {
-      if (_isSyncing) return;
-
-      if (results.contains(ConnectivityResult.mobile) ||
-          results.contains(ConnectivityResult.wifi)) {
+      if (!results.contains(ConnectivityResult.none)) {
         await syncLogs();
+
+        syncTrigger.value = !syncTrigger.value;
       }
     });
   }
